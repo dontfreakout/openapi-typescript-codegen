@@ -491,7 +491,7 @@ const getHeaders = async (config: OpenAPIConfig, options: ApiRequestOptions): Pr
         if (Array.isArray(value)) {
             out[hKey] = value.join(',');
         } else if (typeof value === 'object') {
-            if (explode) {
+            if (!explode) {
                 out[hKey] = Object.entries(value).map(([k, v]) => \`\${k},\${v}\`).join(',');
                 return;
             }
@@ -3731,7 +3731,7 @@ const getHeaders = async (config: OpenAPIConfig, options: ApiRequestOptions): Pr
         if (Array.isArray(value)) {
             out[hKey] = value.join(',');
         } else if (typeof value === 'object') {
-            if (explode) {
+            if (!explode) {
                 out[hKey] = Object.entries(value).map(([k, v]) => \`\${k},\${v}\`).join(',');
                 return;
             }
