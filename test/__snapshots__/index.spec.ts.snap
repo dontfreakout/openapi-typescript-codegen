@@ -2434,11 +2434,11 @@ export class CollectionFormatService {
             method: 'GET',
             url: '/api/v{api-version}/collectionFormat',
             query: {
-                'parameterArrayCSV': new SerializableParameter('parameterArrayCSV', '', false, parameterArrayCsv),
-                'parameterArraySSV': new SerializableParameter('parameterArraySSV', '', false, parameterArraySsv),
-                'parameterArrayTSV': new SerializableParameter('parameterArrayTSV', '', false, parameterArrayTsv),
-                'parameterArrayPipes': new SerializableParameter('parameterArrayPipes', '', false, parameterArrayPipes),
-                'parameterArrayMulti': new SerializableParameter('parameterArrayMulti', '', false, parameterArrayMulti),
+                'parameterArrayCSV': new SerializableParameter('parameterArrayCSV', null, null, parameterArrayCsv),
+                'parameterArraySSV': new SerializableParameter('parameterArraySSV', null, null, parameterArraySsv),
+                'parameterArrayTSV': new SerializableParameter('parameterArrayTSV', null, null, parameterArrayTsv),
+                'parameterArrayPipes': new SerializableParameter('parameterArrayPipes', null, null, parameterArrayPipes),
+                'parameterArrayMulti': new SerializableParameter('parameterArrayMulti', null, null, parameterArrayMulti),
             },
         });
     }
@@ -2480,8 +2480,8 @@ export class ComplexService {
             method: 'GET',
             url: '/api/v{api-version}/complex',
             query: {
-                'parameterObject': new SerializableParameter('parameterObject', '', false, parameterObject),
-                'parameterReference': new SerializableParameter('parameterReference', '', false, parameterReference),
+                'parameterObject': new SerializableParameter('parameterObject', null, null, parameterObject),
+                'parameterReference': new SerializableParameter('parameterReference', null, null, parameterReference),
             },
             errors: {
                 400: \`400 server error\`,
@@ -2553,11 +2553,11 @@ export class DefaultsService {
             method: 'GET',
             url: '/api/v{api-version}/defaults',
             query: {
-                'parameterString': new SerializableParameter('parameterString', '', false, parameterString),
-                'parameterNumber': new SerializableParameter('parameterNumber', '', false, parameterNumber),
-                'parameterBoolean': new SerializableParameter('parameterBoolean', '', false, parameterBoolean),
-                'parameterEnum': new SerializableParameter('parameterEnum', '', false, parameterEnum),
-                'parameterModel': new SerializableParameter('parameterModel', '', false, parameterModel),
+                'parameterString': new SerializableParameter('parameterString', null, null, parameterString),
+                'parameterNumber': new SerializableParameter('parameterNumber', null, null, parameterNumber),
+                'parameterBoolean': new SerializableParameter('parameterBoolean', null, null, parameterBoolean),
+                'parameterEnum': new SerializableParameter('parameterEnum', null, null, parameterEnum),
+                'parameterModel': new SerializableParameter('parameterModel', null, null, parameterModel),
             },
         });
     }
@@ -2583,11 +2583,11 @@ export class DefaultsService {
             method: 'POST',
             url: '/api/v{api-version}/defaults',
             query: {
-                'parameterString': new SerializableParameter('parameterString', '', false, parameterString),
-                'parameterNumber': new SerializableParameter('parameterNumber', '', false, parameterNumber),
-                'parameterBoolean': new SerializableParameter('parameterBoolean', '', false, parameterBoolean),
-                'parameterEnum': new SerializableParameter('parameterEnum', '', false, parameterEnum),
-                'parameterModel': new SerializableParameter('parameterModel', '', false, parameterModel),
+                'parameterString': new SerializableParameter('parameterString', null, null, parameterString),
+                'parameterNumber': new SerializableParameter('parameterNumber', null, null, parameterNumber),
+                'parameterBoolean': new SerializableParameter('parameterBoolean', null, null, parameterBoolean),
+                'parameterEnum': new SerializableParameter('parameterEnum', null, null, parameterEnum),
+                'parameterModel': new SerializableParameter('parameterModel', null, null, parameterModel),
             },
         });
     }
@@ -2617,14 +2617,14 @@ export class DefaultsService {
             method: 'PUT',
             url: '/api/v{api-version}/defaults',
             query: {
-                'parameterOptionalStringWithDefault': new SerializableParameter('parameterOptionalStringWithDefault', '', false, parameterOptionalStringWithDefault),
-                'parameterOptionalStringWithEmptyDefault': new SerializableParameter('parameterOptionalStringWithEmptyDefault', '', false, parameterOptionalStringWithEmptyDefault),
-                'parameterOptionalStringWithNoDefault': new SerializableParameter('parameterOptionalStringWithNoDefault', '', false, parameterOptionalStringWithNoDefault),
-                'parameterStringWithDefault': new SerializableParameter('parameterStringWithDefault', '', false, parameterStringWithDefault),
-                'parameterStringWithEmptyDefault': new SerializableParameter('parameterStringWithEmptyDefault', '', false, parameterStringWithEmptyDefault),
-                'parameterStringWithNoDefault': new SerializableParameter('parameterStringWithNoDefault', '', false, parameterStringWithNoDefault),
-                'parameterStringNullableWithNoDefault': new SerializableParameter('parameterStringNullableWithNoDefault', '', false, parameterStringNullableWithNoDefault),
-                'parameterStringNullableWithDefault': new SerializableParameter('parameterStringNullableWithDefault', '', false, parameterStringNullableWithDefault),
+                'parameterOptionalStringWithDefault': new SerializableParameter('parameterOptionalStringWithDefault', null, null, parameterOptionalStringWithDefault),
+                'parameterOptionalStringWithEmptyDefault': new SerializableParameter('parameterOptionalStringWithEmptyDefault', null, null, parameterOptionalStringWithEmptyDefault),
+                'parameterOptionalStringWithNoDefault': new SerializableParameter('parameterOptionalStringWithNoDefault', null, null, parameterOptionalStringWithNoDefault),
+                'parameterStringWithDefault': new SerializableParameter('parameterStringWithDefault', null, null, parameterStringWithDefault),
+                'parameterStringWithEmptyDefault': new SerializableParameter('parameterStringWithEmptyDefault', null, null, parameterStringWithEmptyDefault),
+                'parameterStringWithNoDefault': new SerializableParameter('parameterStringWithNoDefault', null, null, parameterStringWithNoDefault),
+                'parameterStringNullableWithNoDefault': new SerializableParameter('parameterStringNullableWithNoDefault', null, null, parameterStringNullableWithNoDefault),
+                'parameterStringNullableWithDefault': new SerializableParameter('parameterStringNullableWithDefault', null, null, parameterStringNullableWithDefault),
             },
         });
     }
@@ -2668,12 +2668,12 @@ export class DescriptionsService {
             method: 'POST',
             url: '/api/v{api-version}/descriptions/',
             query: {
-                'parameterWithBreaks': new SerializableParameter('parameterWithBreaks', '', false, parameterWithBreaks),
-                'parameterWithBackticks': new SerializableParameter('parameterWithBackticks', '', false, parameterWithBackticks),
-                'parameterWithSlashes': new SerializableParameter('parameterWithSlashes', '', false, parameterWithSlashes),
-                'parameterWithExpressionPlaceholders': new SerializableParameter('parameterWithExpressionPlaceholders', '', false, parameterWithExpressionPlaceholders),
-                'parameterWithQuotes': new SerializableParameter('parameterWithQuotes', '', false, parameterWithQuotes),
-                'parameterWithReservedCharacters': new SerializableParameter('parameterWithReservedCharacters', '', false, parameterWithReservedCharacters),
+                'parameterWithBreaks': new SerializableParameter('parameterWithBreaks', null, null, parameterWithBreaks),
+                'parameterWithBackticks': new SerializableParameter('parameterWithBackticks', null, null, parameterWithBackticks),
+                'parameterWithSlashes': new SerializableParameter('parameterWithSlashes', null, null, parameterWithSlashes),
+                'parameterWithExpressionPlaceholders': new SerializableParameter('parameterWithExpressionPlaceholders', null, null, parameterWithExpressionPlaceholders),
+                'parameterWithQuotes': new SerializableParameter('parameterWithQuotes', null, null, parameterWithQuotes),
+                'parameterWithReservedCharacters': new SerializableParameter('parameterWithReservedCharacters', null, null, parameterWithReservedCharacters),
             },
         });
     }
@@ -2760,7 +2760,7 @@ export class ErrorService {
             method: 'POST',
             url: '/api/v{api-version}/error',
             query: {
-                'status': new SerializableParameter('status', '', false, status),
+                'status': new SerializableParameter('status', null, null, status),
             },
             errors: {
                 500: \`Custom message: Internal Server Error\`,
@@ -2962,13 +2962,13 @@ export class ParametersService {
             method: 'POST',
             url: '/api/v{api-version}/parameters/{parameterPath}',
             path: {
-                'parameterPath': new SerializableParameter('parameterPath', '', false, parameterPath),
+                'parameterPath': new SerializableParameter('parameterPath', null, null, parameterPath),
             },
             headers: {
-                'parameterHeader': new SerializableParameter('parameterHeader', '', false, parameterHeader),
+                'parameterHeader': new SerializableParameter('parameterHeader', null, null, parameterHeader),
             },
             query: {
-                'parameterQuery': new SerializableParameter('parameterQuery', '', false, parameterQuery),
+                'parameterQuery': new SerializableParameter('parameterQuery', null, null, parameterQuery),
             },
             formData: {
                 'parameterForm': parameterForm,
@@ -3002,16 +3002,16 @@ export class ParametersService {
             method: 'POST',
             url: '/api/v{api-version}/parameters/{parameter.path.1}/{parameter-path-2}/{PARAMETER-PATH-3}',
             path: {
-                'parameter.path.1': new SerializableParameter('parameter.path.1', '', false, parameterPath1),
-                'parameter-path-2': new SerializableParameter('parameter-path-2', '', false, parameterPath2),
-                'PARAMETER-PATH-3': new SerializableParameter('PARAMETER-PATH-3', '', false, parameterPath3),
+                'parameter.path.1': new SerializableParameter('parameter.path.1', null, null, parameterPath1),
+                'parameter-path-2': new SerializableParameter('parameter-path-2', null, null, parameterPath2),
+                'PARAMETER-PATH-3': new SerializableParameter('PARAMETER-PATH-3', null, null, parameterPath3),
             },
             headers: {
-                'parameter.header': new SerializableParameter('parameter.header', '', false, parameterHeader),
+                'parameter.header': new SerializableParameter('parameter.header', null, null, parameterHeader),
             },
             query: {
-                'default': new SerializableParameter('default', '', false, _default),
-                'parameter-query': new SerializableParameter('parameter-query', '', false, parameterQuery),
+                'default': new SerializableParameter('default', null, null, _default),
+                'parameter-query': new SerializableParameter('parameter-query', null, null, parameterQuery),
             },
             formData: {
                 'parameter_form': parameterForm,
@@ -3218,16 +3218,16 @@ export class TypesService {
             method: 'GET',
             url: '/api/v{api-version}/types',
             path: {
-                'id': new SerializableParameter('id', '', false, id),
+                'id': new SerializableParameter('id', null, null, id),
             },
             query: {
-                'parameterNumber': new SerializableParameter('parameterNumber', '', false, parameterNumber),
-                'parameterString': new SerializableParameter('parameterString', '', false, parameterString),
-                'parameterBoolean': new SerializableParameter('parameterBoolean', '', false, parameterBoolean),
-                'parameterObject': new SerializableParameter('parameterObject', '', false, parameterObject),
-                'parameterArray': new SerializableParameter('parameterArray', '', false, parameterArray),
-                'parameterDictionary': new SerializableParameter('parameterDictionary', '', false, parameterDictionary),
-                'parameterEnum': new SerializableParameter('parameterEnum', '', false, parameterEnum),
+                'parameterNumber': new SerializableParameter('parameterNumber', null, null, parameterNumber),
+                'parameterString': new SerializableParameter('parameterString', null, null, parameterString),
+                'parameterBoolean': new SerializableParameter('parameterBoolean', null, null, parameterBoolean),
+                'parameterObject': new SerializableParameter('parameterObject', null, null, parameterObject),
+                'parameterArray': new SerializableParameter('parameterArray', null, null, parameterArray),
+                'parameterDictionary': new SerializableParameter('parameterDictionary', null, null, parameterDictionary),
+                'parameterEnum': new SerializableParameter('parameterEnum', null, null, parameterEnum),
             },
         });
     }
@@ -6567,11 +6567,11 @@ export class CollectionFormatService {
             method: 'GET',
             url: '/api/v{api-version}/collectionFormat',
             query: {
-                'parameterArrayCSV': new SerializableParameter('parameterArrayCSV', '', false, parameterArrayCsv),
-                'parameterArraySSV': new SerializableParameter('parameterArraySSV', '', false, parameterArraySsv),
-                'parameterArrayTSV': new SerializableParameter('parameterArrayTSV', '', false, parameterArrayTsv),
-                'parameterArrayPipes': new SerializableParameter('parameterArrayPipes', '', false, parameterArrayPipes),
-                'parameterArrayMulti': new SerializableParameter('parameterArrayMulti', '', false, parameterArrayMulti),
+                'parameterArrayCSV': new SerializableParameter('parameterArrayCSV', null, null, parameterArrayCsv),
+                'parameterArraySSV': new SerializableParameter('parameterArraySSV', null, null, parameterArraySsv),
+                'parameterArrayTSV': new SerializableParameter('parameterArrayTSV', null, null, parameterArrayTsv),
+                'parameterArrayPipes': new SerializableParameter('parameterArrayPipes', null, null, parameterArrayPipes),
+                'parameterArrayMulti': new SerializableParameter('parameterArrayMulti', null, null, parameterArrayMulti),
             },
         });
     }
@@ -6616,8 +6616,8 @@ export class ComplexService {
             method: 'GET',
             url: '/api/v{api-version}/complex',
             query: {
-                'parameterObject': new SerializableParameter('parameterObject', '', false, parameterObject),
-                'parameterReference': new SerializableParameter('parameterReference', '', false, parameterReference),
+                'parameterObject': new SerializableParameter('parameterObject', null, null, parameterObject),
+                'parameterReference': new SerializableParameter('parameterReference', null, null, parameterReference),
             },
             errors: {
                 400: \`400 server error\`,
@@ -6652,7 +6652,7 @@ export class ComplexService {
             method: 'PUT',
             url: '/api/v{api-version}/complex/{id}',
             path: {
-                'id': new SerializableParameter('id', '', false, id),
+                'id': new SerializableParameter('id', null, null, id),
             },
             body: requestBody,
             mediaType: 'application/json-patch+json',
@@ -6722,11 +6722,11 @@ export class DefaultsService {
             method: 'GET',
             url: '/api/v{api-version}/defaults',
             query: {
-                'parameterString': new SerializableParameter('parameterString', '', false, parameterString),
-                'parameterNumber': new SerializableParameter('parameterNumber', '', false, parameterNumber),
-                'parameterBoolean': new SerializableParameter('parameterBoolean', '', false, parameterBoolean),
-                'parameterEnum': new SerializableParameter('parameterEnum', '', false, parameterEnum),
-                'parameterModel': new SerializableParameter('parameterModel', '', false, parameterModel),
+                'parameterString': new SerializableParameter('parameterString', null, null, parameterString),
+                'parameterNumber': new SerializableParameter('parameterNumber', null, null, parameterNumber),
+                'parameterBoolean': new SerializableParameter('parameterBoolean', null, null, parameterBoolean),
+                'parameterEnum': new SerializableParameter('parameterEnum', null, null, parameterEnum),
+                'parameterModel': new SerializableParameter('parameterModel', null, null, parameterModel),
             },
         });
     }
@@ -6752,11 +6752,11 @@ export class DefaultsService {
             method: 'POST',
             url: '/api/v{api-version}/defaults',
             query: {
-                'parameterString': new SerializableParameter('parameterString', '', false, parameterString),
-                'parameterNumber': new SerializableParameter('parameterNumber', '', false, parameterNumber),
-                'parameterBoolean': new SerializableParameter('parameterBoolean', '', false, parameterBoolean),
-                'parameterEnum': new SerializableParameter('parameterEnum', '', false, parameterEnum),
-                'parameterModel': new SerializableParameter('parameterModel', '', false, parameterModel),
+                'parameterString': new SerializableParameter('parameterString', null, null, parameterString),
+                'parameterNumber': new SerializableParameter('parameterNumber', null, null, parameterNumber),
+                'parameterBoolean': new SerializableParameter('parameterBoolean', null, null, parameterBoolean),
+                'parameterEnum': new SerializableParameter('parameterEnum', null, null, parameterEnum),
+                'parameterModel': new SerializableParameter('parameterModel', null, null, parameterModel),
             },
         });
     }
@@ -6786,14 +6786,14 @@ export class DefaultsService {
             method: 'PUT',
             url: '/api/v{api-version}/defaults',
             query: {
-                'parameterOptionalStringWithDefault': new SerializableParameter('parameterOptionalStringWithDefault', '', false, parameterOptionalStringWithDefault),
-                'parameterOptionalStringWithEmptyDefault': new SerializableParameter('parameterOptionalStringWithEmptyDefault', '', false, parameterOptionalStringWithEmptyDefault),
-                'parameterOptionalStringWithNoDefault': new SerializableParameter('parameterOptionalStringWithNoDefault', '', false, parameterOptionalStringWithNoDefault),
-                'parameterStringWithDefault': new SerializableParameter('parameterStringWithDefault', '', false, parameterStringWithDefault),
-                'parameterStringWithEmptyDefault': new SerializableParameter('parameterStringWithEmptyDefault', '', false, parameterStringWithEmptyDefault),
-                'parameterStringWithNoDefault': new SerializableParameter('parameterStringWithNoDefault', '', false, parameterStringWithNoDefault),
-                'parameterStringNullableWithNoDefault': new SerializableParameter('parameterStringNullableWithNoDefault', '', false, parameterStringNullableWithNoDefault),
-                'parameterStringNullableWithDefault': new SerializableParameter('parameterStringNullableWithDefault', '', false, parameterStringNullableWithDefault),
+                'parameterOptionalStringWithDefault': new SerializableParameter('parameterOptionalStringWithDefault', null, null, parameterOptionalStringWithDefault),
+                'parameterOptionalStringWithEmptyDefault': new SerializableParameter('parameterOptionalStringWithEmptyDefault', null, null, parameterOptionalStringWithEmptyDefault),
+                'parameterOptionalStringWithNoDefault': new SerializableParameter('parameterOptionalStringWithNoDefault', null, null, parameterOptionalStringWithNoDefault),
+                'parameterStringWithDefault': new SerializableParameter('parameterStringWithDefault', null, null, parameterStringWithDefault),
+                'parameterStringWithEmptyDefault': new SerializableParameter('parameterStringWithEmptyDefault', null, null, parameterStringWithEmptyDefault),
+                'parameterStringWithNoDefault': new SerializableParameter('parameterStringWithNoDefault', null, null, parameterStringWithNoDefault),
+                'parameterStringNullableWithNoDefault': new SerializableParameter('parameterStringNullableWithNoDefault', null, null, parameterStringNullableWithNoDefault),
+                'parameterStringNullableWithDefault': new SerializableParameter('parameterStringNullableWithDefault', null, null, parameterStringNullableWithDefault),
             },
         });
     }
@@ -6827,7 +6827,7 @@ export class DeprecatedService {
             method: 'POST',
             url: '/api/v{api-version}/parameters/deprecated',
             headers: {
-                'parameter': new SerializableParameter('parameter', '', false, parameter),
+                'parameter': new SerializableParameter('parameter', null, null, parameter),
             },
         });
     }
@@ -6871,12 +6871,12 @@ export class DescriptionsService {
             method: 'POST',
             url: '/api/v{api-version}/descriptions/',
             query: {
-                'parameterWithBreaks': new SerializableParameter('parameterWithBreaks', '', false, parameterWithBreaks),
-                'parameterWithBackticks': new SerializableParameter('parameterWithBackticks', '', false, parameterWithBackticks),
-                'parameterWithSlashes': new SerializableParameter('parameterWithSlashes', '', false, parameterWithSlashes),
-                'parameterWithExpressionPlaceholders': new SerializableParameter('parameterWithExpressionPlaceholders', '', false, parameterWithExpressionPlaceholders),
-                'parameterWithQuotes': new SerializableParameter('parameterWithQuotes', '', false, parameterWithQuotes),
-                'parameterWithReservedCharacters': new SerializableParameter('parameterWithReservedCharacters', '', false, parameterWithReservedCharacters),
+                'parameterWithBreaks': new SerializableParameter('parameterWithBreaks', null, null, parameterWithBreaks),
+                'parameterWithBackticks': new SerializableParameter('parameterWithBackticks', null, null, parameterWithBackticks),
+                'parameterWithSlashes': new SerializableParameter('parameterWithSlashes', null, null, parameterWithSlashes),
+                'parameterWithExpressionPlaceholders': new SerializableParameter('parameterWithExpressionPlaceholders', null, null, parameterWithExpressionPlaceholders),
+                'parameterWithQuotes': new SerializableParameter('parameterWithQuotes', null, null, parameterWithQuotes),
+                'parameterWithReservedCharacters': new SerializableParameter('parameterWithReservedCharacters', null, null, parameterWithReservedCharacters),
             },
         });
     }
@@ -6963,7 +6963,7 @@ export class ErrorService {
             method: 'POST',
             url: '/api/v{api-version}/error',
             query: {
-                'status': new SerializableParameter('status', '', false, status),
+                'status': new SerializableParameter('status', null, null, status),
             },
             errors: {
                 500: \`Custom message: Internal Server Error\`,
@@ -7004,7 +7004,7 @@ export class FormDataService {
             method: 'POST',
             url: '/api/v{api-version}/formData/',
             query: {
-                'parameter': new SerializableParameter('parameter', '', false, parameter),
+                'parameter': new SerializableParameter('parameter', null, null, parameter),
             },
             formData: formData,
             mediaType: 'multipart/form-data',
@@ -7259,16 +7259,16 @@ export class ParametersService {
             method: 'POST',
             url: '/api/v{api-version}/parameters/{parameterPath}',
             path: {
-                'parameterPath': new SerializableParameter('parameterPath', '', false, parameterPath),
+                'parameterPath': new SerializableParameter('parameterPath', null, null, parameterPath),
             },
             cookies: {
                 'parameterCookie': parameterCookie,
             },
             headers: {
-                'parameterHeader': new SerializableParameter('parameterHeader', '', false, parameterHeader),
+                'parameterHeader': new SerializableParameter('parameterHeader', null, null, parameterHeader),
             },
             query: {
-                'parameterQuery': new SerializableParameter('parameterQuery', '', false, parameterQuery),
+                'parameterQuery': new SerializableParameter('parameterQuery', null, null, parameterQuery),
             },
             formData: {
                 'parameterForm': parameterForm,
@@ -7305,19 +7305,19 @@ export class ParametersService {
             method: 'POST',
             url: '/api/v{api-version}/parameters/{parameter.path.1}/{parameter-path-2}/{PARAMETER-PATH-3}',
             path: {
-                'parameter.path.1': new SerializableParameter('parameter.path.1', '', false, parameterPath1),
-                'parameter-path-2': new SerializableParameter('parameter-path-2', '', false, parameterPath2),
-                'PARAMETER-PATH-3': new SerializableParameter('PARAMETER-PATH-3', '', false, parameterPath3),
+                'parameter.path.1': new SerializableParameter('parameter.path.1', null, null, parameterPath1),
+                'parameter-path-2': new SerializableParameter('parameter-path-2', null, null, parameterPath2),
+                'PARAMETER-PATH-3': new SerializableParameter('PARAMETER-PATH-3', null, null, parameterPath3),
             },
             cookies: {
                 'PARAMETER-COOKIE': parameterCookie,
             },
             headers: {
-                'parameter.header': new SerializableParameter('parameter.header', '', false, parameterHeader),
+                'parameter.header': new SerializableParameter('parameter.header', null, null, parameterHeader),
             },
             query: {
-                'default': new SerializableParameter('default', '', false, _default),
-                'parameter-query': new SerializableParameter('parameter-query', '', false, parameterQuery),
+                'default': new SerializableParameter('default', null, null, _default),
+                'parameter-query': new SerializableParameter('parameter-query', null, null, parameterQuery),
             },
             formData: {
                 'parameter_form': parameterForm,
@@ -7340,7 +7340,7 @@ export class ParametersService {
             method: 'GET',
             url: '/api/v{api-version}/parameters/',
             query: {
-                'parameter': new SerializableParameter('parameter', '', false, parameter),
+                'parameter': new SerializableParameter('parameter', null, null, parameter),
             },
             body: requestBody,
             mediaType: 'application/json',
@@ -7360,7 +7360,7 @@ export class ParametersService {
             method: 'POST',
             url: '/api/v{api-version}/parameters/',
             query: {
-                'parameter': new SerializableParameter('parameter', '', false, parameter),
+                'parameter': new SerializableParameter('parameter', null, null, parameter),
             },
             body: requestBody,
             mediaType: 'application/json',
@@ -7397,7 +7397,7 @@ export class RequestBodyService {
             method: 'POST',
             url: '/api/v{api-version}/requestBody/',
             query: {
-                'parameter': new SerializableParameter('parameter', '', false, parameter),
+                'parameter': new SerializableParameter('parameter', null, null, parameter),
             },
             body: requestBody,
             mediaType: 'application/json',
@@ -7602,16 +7602,16 @@ export class TypesService {
             method: 'GET',
             url: '/api/v{api-version}/types',
             path: {
-                'id': new SerializableParameter('id', '', false, id),
+                'id': new SerializableParameter('id', null, null, id),
             },
             query: {
-                'parameterNumber': new SerializableParameter('parameterNumber', '', false, parameterNumber),
-                'parameterString': new SerializableParameter('parameterString', '', false, parameterString),
-                'parameterBoolean': new SerializableParameter('parameterBoolean', '', false, parameterBoolean),
-                'parameterObject': new SerializableParameter('parameterObject', '', false, parameterObject),
-                'parameterArray': new SerializableParameter('parameterArray', '', false, parameterArray),
-                'parameterDictionary': new SerializableParameter('parameterDictionary', '', false, parameterDictionary),
-                'parameterEnum': new SerializableParameter('parameterEnum', '', false, parameterEnum),
+                'parameterNumber': new SerializableParameter('parameterNumber', null, null, parameterNumber),
+                'parameterString': new SerializableParameter('parameterString', null, null, parameterString),
+                'parameterBoolean': new SerializableParameter('parameterBoolean', null, null, parameterBoolean),
+                'parameterObject': new SerializableParameter('parameterObject', null, null, parameterObject),
+                'parameterArray': new SerializableParameter('parameterArray', null, null, parameterArray),
+                'parameterDictionary': new SerializableParameter('parameterDictionary', null, null, parameterDictionary),
+                'parameterEnum': new SerializableParameter('parameterEnum', null, null, parameterEnum),
             },
         });
     }
