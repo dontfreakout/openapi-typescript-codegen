@@ -468,12 +468,12 @@ const getHeaders = async (config: OpenAPIConfig, options: ApiRequestOptions): Pr
     const password = await resolve(options, config.PASSWORD);
     const additionalHeaders = await resolve(options, config.HEADERS);
 
-    const serializeHeaders = (headers?: Record<string, any>): Record<string, string> | undefined => {
+    const serializeHeaders = (headers?: Record<string, any>): Record<string, any> | undefined => {
     if (!headers) {
         return headers;
     }
 
-    const out = {};
+    const out: Record<string, any> = {};
 
     Object.entries(headers).forEach(([hKey, hValue]) => {
         if (!(hValue instanceof SerializableParameter)) {
@@ -3704,12 +3704,12 @@ const getHeaders = async (config: OpenAPIConfig, options: ApiRequestOptions): Pr
     const password = await resolve(options, config.PASSWORD);
     const additionalHeaders = await resolve(options, config.HEADERS);
 
-    const serializeHeaders = (headers?: Record<string, any>): Record<string, string> | undefined => {
+    const serializeHeaders = (headers?: Record<string, any>): Record<string, any> | undefined => {
     if (!headers) {
         return headers;
     }
 
-    const out = {};
+    const out: Record<string, any> = {};
 
     Object.entries(headers).forEach(([hKey, hValue]) => {
         if (!(hValue instanceof SerializableParameter)) {
