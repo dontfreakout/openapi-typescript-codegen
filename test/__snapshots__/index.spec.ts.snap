@@ -229,6 +229,26 @@ export const OpenAPI: OpenAPIConfig = {
 "
 `;
 
+exports[`v2 should generate: ./test/generated/v2/core/SerializableParameter.ts 1`] = `
+"/* istanbul ignore file */
+/* tslint:disable */
+/* eslint-disable */
+export class SerializableParameter {
+    public readonly parameterName: string;
+    public readonly style: string | null;
+    public readonly explode: boolean | null;
+    public readonly parameterValue: any;
+
+    constructor(parameterName: string, style: string | null, explode: boolean | null, parameterValue: any) {
+        this.parameterName = parameterName;
+        this.style = style;
+        this.explode = explode;
+        this.parameterValue = parameterValue;
+    }
+}
+"
+`;
+
 exports[`v2 should generate: ./test/generated/v2/core/request.ts 1`] = `
 "/* istanbul ignore file */
 /* tslint:disable */
@@ -239,6 +259,7 @@ import type { ApiResult } from './ApiResult';
 import { CancelablePromise } from './CancelablePromise';
 import type { OnCancel } from './CancelablePromise';
 import type { OpenAPIConfig } from './OpenAPI';
+import { SerializableParameter } from './SerializableParameter';
 
 const isDefined = <T>(value: T | null | undefined): value is Exclude<T, null | undefined> => {
     return value !== undefined && value !== null;
@@ -285,16 +306,44 @@ const getQueryString = (params: Record<string, any>): string => {
         qs.push(\`\${encodeURIComponent(key)}=\${encodeURIComponent(String(value))}\`);
     };
 
-    const process = (key: string, value: any) => {
+    const process = (key: string, value: any, style = 'form', explode = true) => {
         if (isDefined(value)) {
-            if (Array.isArray(value)) {
-                value.forEach(v => {
-                    process(key, v);
-                });
+            if (value instanceof SerializableParameter) {
+                process(
+                    value.parameterName,
+                    value.parameterValue,
+                    value.style || style,
+                    value.explode !== null ? value.explode : explode,
+                );
+            } else if (Array.isArray(value)) {
+                if (!explode && style === 'form') {
+                    append(key, value.join(','));
+                } else if (!explode && style === 'spaceDelimited') {
+                    append(key, value.join(' '));
+                } else if (!explode && style === 'pipeDelimited') {
+                    append(key, value.join('|'));
+                } else {
+                    value.forEach(v => {
+                        process(key, v);
+                    });
+                }
             } else if (typeof value === 'object') {
-                Object.entries(value).forEach(([k, v]) => {
-                    process(\`\${key}[\${k}]\`, v);
-                });
+                if (style === 'form') {
+                    if (explode) {
+                        Object.entries(value).forEach(([k, v]) => {
+                            append(k, v);
+                        });
+                    } else {
+                        append(
+                            key,
+                            Object.entries(value).map(([k, v]) => \`\${k},\${v}\`).join(',')
+                        );
+                    }
+                } else {
+                    Object.entries(value).forEach(([k, v]) => {
+                        process(\`\${key}[\${k}]\`, v);
+                    });
+                }
             } else {
                 append(key, value);
             }
@@ -319,7 +368,53 @@ const getUrl = (config: OpenAPIConfig, options: ApiRequestOptions): string => {
         .replace('{api-version}', config.VERSION)
         .replace(/{(.*?)}/g, (substring: string, group: string) => {
             if (options.path?.hasOwnProperty(group)) {
-                return encoder(String(options.path[group]));
+                const item = options.path[group];
+                if (!(item instanceof SerializableParameter)) {
+                    return encoder(String(item));
+                }
+
+                const style = item.style || 'simple';
+                const explode = item.explode || false;
+                const name = item.parameterName;
+                const value = item.parameterValue;
+
+                if (Array.isArray(value)) {
+                    if (style === 'label') {
+                        return encoder(\`.\${value.join(explode ? '.' : ',')}\`);
+                    } else if (style === 'matrix') {
+                        if (!explode) {
+                            return encoder(\`;\${name}=\${value.join(',')}\`);
+                        }
+
+                        return encoder(\`;\${value.map((v) => \`\${name}=\${v}\`).join(';')}\`);
+                    } else {
+                        return encoder(value.join(','));
+                    }
+                } else if (typeof value === 'object') {
+                    const entries = Object.entries(value);
+                    if (style === 'simple' && explode) {
+                        return encoder(entries.map(([k, v]) => \`\${k}=\${v}\`).join(','));
+                    } else if (style === 'label') {
+                        return encoder(\`.\${entries.map(([k, v]) => \`\${k},\${v}\`).join(explode ? '.' : ',')}\`);
+                    } else if (style === 'matrix') {
+                        if (!explode) {
+                            return encoder(\`;\${name}=\${entries.map(([k, v]) => \`\${k},\${v}\`).join(',')}\`);
+                        }
+
+                        return encoder(\`;\${entries.map(([k, v]) => \`\${k}=\${v}\`).join(';')}\`);
+                    }
+
+                    return encoder(entries.map(([k, v]) => \`\${k},\${v}\`).join(','));
+                } else {
+                    const stringVal = String(value);
+                    if (style === 'label') {
+                        return encoder(\`.\${stringVal}\`);
+                    } else if (style === 'matrix') {
+                        return encoder(\`;\${name}=\${stringVal}\`);
+                    } else {
+                        return encoder(stringVal);
+                    }
+                }
             }
             return substring;
         });
@@ -373,10 +468,42 @@ const getHeaders = async (config: OpenAPIConfig, options: ApiRequestOptions): Pr
     const password = await resolve(options, config.PASSWORD);
     const additionalHeaders = await resolve(options, config.HEADERS);
 
+    const serializeHeaders = (headers?: Record<string, any>): Record<string, string> | undefined => {
+    if (!headers) {
+        return headers;
+    }
+
+    const out = {};
+
+    Object.entries(headers).forEach(([hKey, hValue]) => {
+        if (!(hValue instanceof SerializableParameter)) {
+            out[hKey] = hValue;
+            return;
+        }
+
+        const explode = hValue.explode || false;
+        const value = hValue.parameterValue;
+
+        if (Array.isArray(value)) {
+            out[hKey] = value.join(',');
+        } else if (typeof value === 'object') {
+            if (explode) {
+                out[hKey] = Object.entries(value).map(([k, v]) => \`\${k},\${v}\`).join(',');
+                return;
+            }
+
+            out[hKey] = Object.entries(value).map(([k, v]) => \`\${k}=\${v}\`).join(',');
+        } else {
+            out[hKey] = value;
+        }
+    });
+
+    return out;
+};
     const headers = Object.entries({
         Accept: 'application/json',
         ...additionalHeaders,
-        ...options.headers,
+        ...serializeHeaders(options.headers),
     })
         .filter(([_, value]) => isDefined(value))
         .reduce((headers, [key, value]) => ({
@@ -2284,6 +2411,7 @@ exports[`v2 should generate: ./test/generated/v2/services/CollectionFormatServic
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class CollectionFormatService {
 
@@ -2306,11 +2434,11 @@ export class CollectionFormatService {
             method: 'GET',
             url: '/api/v{api-version}/collectionFormat',
             query: {
-                'parameterArrayCSV': parameterArrayCsv,
-                'parameterArraySSV': parameterArraySsv,
-                'parameterArrayTSV': parameterArrayTsv,
-                'parameterArrayPipes': parameterArrayPipes,
-                'parameterArrayMulti': parameterArrayMulti,
+                'parameterArrayCSV': new SerializableParameter('parameterArrayCSV', '', false, parameterArrayCsv),
+                'parameterArraySSV': new SerializableParameter('parameterArraySSV', '', false, parameterArraySsv),
+                'parameterArrayTSV': new SerializableParameter('parameterArrayTSV', '', false, parameterArrayTsv),
+                'parameterArrayPipes': new SerializableParameter('parameterArrayPipes', '', false, parameterArrayPipes),
+                'parameterArrayMulti': new SerializableParameter('parameterArrayMulti', '', false, parameterArrayMulti),
             },
         });
     }
@@ -2328,6 +2456,7 @@ import type { ModelWithString } from '../models/ModelWithString';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class ComplexService {
 
@@ -2351,8 +2480,8 @@ export class ComplexService {
             method: 'GET',
             url: '/api/v{api-version}/complex',
             query: {
-                'parameterObject': parameterObject,
-                'parameterReference': parameterReference,
+                'parameterObject': new SerializableParameter('parameterObject', '', false, parameterObject),
+                'parameterReference': new SerializableParameter('parameterReference', '', false, parameterReference),
             },
             errors: {
                 400: \`400 server error\`,
@@ -2372,6 +2501,7 @@ exports[`v2 should generate: ./test/generated/v2/services/DefaultService.ts 1`] 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class DefaultService {
 
@@ -2398,6 +2528,7 @@ import type { ModelWithString } from '../models/ModelWithString';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class DefaultsService {
 
@@ -2422,11 +2553,11 @@ export class DefaultsService {
             method: 'GET',
             url: '/api/v{api-version}/defaults',
             query: {
-                'parameterString': parameterString,
-                'parameterNumber': parameterNumber,
-                'parameterBoolean': parameterBoolean,
-                'parameterEnum': parameterEnum,
-                'parameterModel': parameterModel,
+                'parameterString': new SerializableParameter('parameterString', '', false, parameterString),
+                'parameterNumber': new SerializableParameter('parameterNumber', '', false, parameterNumber),
+                'parameterBoolean': new SerializableParameter('parameterBoolean', '', false, parameterBoolean),
+                'parameterEnum': new SerializableParameter('parameterEnum', '', false, parameterEnum),
+                'parameterModel': new SerializableParameter('parameterModel', '', false, parameterModel),
             },
         });
     }
@@ -2452,11 +2583,11 @@ export class DefaultsService {
             method: 'POST',
             url: '/api/v{api-version}/defaults',
             query: {
-                'parameterString': parameterString,
-                'parameterNumber': parameterNumber,
-                'parameterBoolean': parameterBoolean,
-                'parameterEnum': parameterEnum,
-                'parameterModel': parameterModel,
+                'parameterString': new SerializableParameter('parameterString', '', false, parameterString),
+                'parameterNumber': new SerializableParameter('parameterNumber', '', false, parameterNumber),
+                'parameterBoolean': new SerializableParameter('parameterBoolean', '', false, parameterBoolean),
+                'parameterEnum': new SerializableParameter('parameterEnum', '', false, parameterEnum),
+                'parameterModel': new SerializableParameter('parameterModel', '', false, parameterModel),
             },
         });
     }
@@ -2486,14 +2617,14 @@ export class DefaultsService {
             method: 'PUT',
             url: '/api/v{api-version}/defaults',
             query: {
-                'parameterOptionalStringWithDefault': parameterOptionalStringWithDefault,
-                'parameterOptionalStringWithEmptyDefault': parameterOptionalStringWithEmptyDefault,
-                'parameterOptionalStringWithNoDefault': parameterOptionalStringWithNoDefault,
-                'parameterStringWithDefault': parameterStringWithDefault,
-                'parameterStringWithEmptyDefault': parameterStringWithEmptyDefault,
-                'parameterStringWithNoDefault': parameterStringWithNoDefault,
-                'parameterStringNullableWithNoDefault': parameterStringNullableWithNoDefault,
-                'parameterStringNullableWithDefault': parameterStringNullableWithDefault,
+                'parameterOptionalStringWithDefault': new SerializableParameter('parameterOptionalStringWithDefault', '', false, parameterOptionalStringWithDefault),
+                'parameterOptionalStringWithEmptyDefault': new SerializableParameter('parameterOptionalStringWithEmptyDefault', '', false, parameterOptionalStringWithEmptyDefault),
+                'parameterOptionalStringWithNoDefault': new SerializableParameter('parameterOptionalStringWithNoDefault', '', false, parameterOptionalStringWithNoDefault),
+                'parameterStringWithDefault': new SerializableParameter('parameterStringWithDefault', '', false, parameterStringWithDefault),
+                'parameterStringWithEmptyDefault': new SerializableParameter('parameterStringWithEmptyDefault', '', false, parameterStringWithEmptyDefault),
+                'parameterStringWithNoDefault': new SerializableParameter('parameterStringWithNoDefault', '', false, parameterStringWithNoDefault),
+                'parameterStringNullableWithNoDefault': new SerializableParameter('parameterStringNullableWithNoDefault', '', false, parameterStringNullableWithNoDefault),
+                'parameterStringNullableWithDefault': new SerializableParameter('parameterStringNullableWithDefault', '', false, parameterStringNullableWithDefault),
             },
         });
     }
@@ -2509,6 +2640,7 @@ exports[`v2 should generate: ./test/generated/v2/services/DescriptionsService.ts
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class DescriptionsService {
 
@@ -2536,12 +2668,12 @@ export class DescriptionsService {
             method: 'POST',
             url: '/api/v{api-version}/descriptions/',
             query: {
-                'parameterWithBreaks': parameterWithBreaks,
-                'parameterWithBackticks': parameterWithBackticks,
-                'parameterWithSlashes': parameterWithSlashes,
-                'parameterWithExpressionPlaceholders': parameterWithExpressionPlaceholders,
-                'parameterWithQuotes': parameterWithQuotes,
-                'parameterWithReservedCharacters': parameterWithReservedCharacters,
+                'parameterWithBreaks': new SerializableParameter('parameterWithBreaks', '', false, parameterWithBreaks),
+                'parameterWithBackticks': new SerializableParameter('parameterWithBackticks', '', false, parameterWithBackticks),
+                'parameterWithSlashes': new SerializableParameter('parameterWithSlashes', '', false, parameterWithSlashes),
+                'parameterWithExpressionPlaceholders': new SerializableParameter('parameterWithExpressionPlaceholders', '', false, parameterWithExpressionPlaceholders),
+                'parameterWithQuotes': new SerializableParameter('parameterWithQuotes', '', false, parameterWithQuotes),
+                'parameterWithReservedCharacters': new SerializableParameter('parameterWithReservedCharacters', '', false, parameterWithReservedCharacters),
             },
         });
     }
@@ -2557,6 +2689,7 @@ exports[`v2 should generate: ./test/generated/v2/services/DuplicateService.ts 1`
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class DuplicateService {
 
@@ -2611,6 +2744,7 @@ exports[`v2 should generate: ./test/generated/v2/services/ErrorService.ts 1`] = 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class ErrorService {
 
@@ -2626,7 +2760,7 @@ export class ErrorService {
             method: 'POST',
             url: '/api/v{api-version}/error',
             query: {
-                'status': status,
+                'status': new SerializableParameter('status', '', false, status),
             },
             errors: {
                 500: \`Custom message: Internal Server Error\`,
@@ -2648,6 +2782,7 @@ exports[`v2 should generate: ./test/generated/v2/services/HeaderService.ts 1`] =
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class HeaderService {
 
@@ -2678,6 +2813,7 @@ exports[`v2 should generate: ./test/generated/v2/services/MultipleTags1Service.t
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class MultipleTags1Service {
 
@@ -2714,6 +2850,7 @@ exports[`v2 should generate: ./test/generated/v2/services/MultipleTags2Service.t
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class MultipleTags2Service {
 
@@ -2750,6 +2887,7 @@ exports[`v2 should generate: ./test/generated/v2/services/MultipleTags3Service.t
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class MultipleTags3Service {
 
@@ -2775,6 +2913,7 @@ exports[`v2 should generate: ./test/generated/v2/services/NoContentService.ts 1`
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class NoContentService {
 
@@ -2800,6 +2939,7 @@ exports[`v2 should generate: ./test/generated/v2/services/ParametersService.ts 1
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class ParametersService {
 
@@ -2822,13 +2962,13 @@ export class ParametersService {
             method: 'POST',
             url: '/api/v{api-version}/parameters/{parameterPath}',
             path: {
-                'parameterPath': parameterPath,
+                'parameterPath': new SerializableParameter('parameterPath', '', false, parameterPath),
             },
             headers: {
-                'parameterHeader': parameterHeader,
+                'parameterHeader': new SerializableParameter('parameterHeader', '', false, parameterHeader),
             },
             query: {
-                'parameterQuery': parameterQuery,
+                'parameterQuery': new SerializableParameter('parameterQuery', '', false, parameterQuery),
             },
             formData: {
                 'parameterForm': parameterForm,
@@ -2862,16 +3002,16 @@ export class ParametersService {
             method: 'POST',
             url: '/api/v{api-version}/parameters/{parameter.path.1}/{parameter-path-2}/{PARAMETER-PATH-3}',
             path: {
-                'parameter.path.1': parameterPath1,
-                'parameter-path-2': parameterPath2,
-                'PARAMETER-PATH-3': parameterPath3,
+                'parameter.path.1': new SerializableParameter('parameter.path.1', '', false, parameterPath1),
+                'parameter-path-2': new SerializableParameter('parameter-path-2', '', false, parameterPath2),
+                'PARAMETER-PATH-3': new SerializableParameter('PARAMETER-PATH-3', '', false, parameterPath3),
             },
             headers: {
-                'parameter.header': parameterHeader,
+                'parameter.header': new SerializableParameter('parameter.header', '', false, parameterHeader),
             },
             query: {
-                'default': _default,
-                'parameter-query': parameterQuery,
+                'default': new SerializableParameter('default', '', false, _default),
+                'parameter-query': new SerializableParameter('parameter-query', '', false, parameterQuery),
             },
             formData: {
                 'parameter_form': parameterForm,
@@ -2895,6 +3035,7 @@ import type { ModelWithString } from '../models/ModelWithString';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class ResponseService {
 
@@ -2959,6 +3100,7 @@ exports[`v2 should generate: ./test/generated/v2/services/SimpleService.ts 1`] =
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class SimpleService {
 
@@ -3043,6 +3185,7 @@ exports[`v2 should generate: ./test/generated/v2/services/TypesService.ts 1`] = 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class TypesService {
 
@@ -3075,16 +3218,16 @@ export class TypesService {
             method: 'GET',
             url: '/api/v{api-version}/types',
             path: {
-                'id': id,
+                'id': new SerializableParameter('id', '', false, id),
             },
             query: {
-                'parameterNumber': parameterNumber,
-                'parameterString': parameterString,
-                'parameterBoolean': parameterBoolean,
-                'parameterObject': parameterObject,
-                'parameterArray': parameterArray,
-                'parameterDictionary': parameterDictionary,
-                'parameterEnum': parameterEnum,
+                'parameterNumber': new SerializableParameter('parameterNumber', '', false, parameterNumber),
+                'parameterString': new SerializableParameter('parameterString', '', false, parameterString),
+                'parameterBoolean': new SerializableParameter('parameterBoolean', '', false, parameterBoolean),
+                'parameterObject': new SerializableParameter('parameterObject', '', false, parameterObject),
+                'parameterArray': new SerializableParameter('parameterArray', '', false, parameterArray),
+                'parameterDictionary': new SerializableParameter('parameterDictionary', '', false, parameterDictionary),
+                'parameterEnum': new SerializableParameter('parameterEnum', '', false, parameterEnum),
             },
         });
     }
@@ -3322,6 +3465,26 @@ export const OpenAPI: OpenAPIConfig = {
 "
 `;
 
+exports[`v3 should generate: ./test/generated/v3/core/SerializableParameter.ts 1`] = `
+"/* istanbul ignore file */
+/* tslint:disable */
+/* eslint-disable */
+export class SerializableParameter {
+    public readonly parameterName: string;
+    public readonly style: string | null;
+    public readonly explode: boolean | null;
+    public readonly parameterValue: any;
+
+    constructor(parameterName: string, style: string | null, explode: boolean | null, parameterValue: any) {
+        this.parameterName = parameterName;
+        this.style = style;
+        this.explode = explode;
+        this.parameterValue = parameterValue;
+    }
+}
+"
+`;
+
 exports[`v3 should generate: ./test/generated/v3/core/request.ts 1`] = `
 "/* istanbul ignore file */
 /* tslint:disable */
@@ -3332,6 +3495,7 @@ import type { ApiResult } from './ApiResult';
 import { CancelablePromise } from './CancelablePromise';
 import type { OnCancel } from './CancelablePromise';
 import type { OpenAPIConfig } from './OpenAPI';
+import { SerializableParameter } from './SerializableParameter';
 
 const isDefined = <T>(value: T | null | undefined): value is Exclude<T, null | undefined> => {
     return value !== undefined && value !== null;
@@ -3378,16 +3542,44 @@ const getQueryString = (params: Record<string, any>): string => {
         qs.push(\`\${encodeURIComponent(key)}=\${encodeURIComponent(String(value))}\`);
     };
 
-    const process = (key: string, value: any) => {
+    const process = (key: string, value: any, style = 'form', explode = true) => {
         if (isDefined(value)) {
-            if (Array.isArray(value)) {
-                value.forEach(v => {
-                    process(key, v);
-                });
+            if (value instanceof SerializableParameter) {
+                process(
+                    value.parameterName,
+                    value.parameterValue,
+                    value.style || style,
+                    value.explode !== null ? value.explode : explode,
+                );
+            } else if (Array.isArray(value)) {
+                if (!explode && style === 'form') {
+                    append(key, value.join(','));
+                } else if (!explode && style === 'spaceDelimited') {
+                    append(key, value.join(' '));
+                } else if (!explode && style === 'pipeDelimited') {
+                    append(key, value.join('|'));
+                } else {
+                    value.forEach(v => {
+                        process(key, v);
+                    });
+                }
             } else if (typeof value === 'object') {
-                Object.entries(value).forEach(([k, v]) => {
-                    process(\`\${key}[\${k}]\`, v);
-                });
+                if (style === 'form') {
+                    if (explode) {
+                        Object.entries(value).forEach(([k, v]) => {
+                            append(k, v);
+                        });
+                    } else {
+                        append(
+                            key,
+                            Object.entries(value).map(([k, v]) => \`\${k},\${v}\`).join(',')
+                        );
+                    }
+                } else {
+                    Object.entries(value).forEach(([k, v]) => {
+                        process(\`\${key}[\${k}]\`, v);
+                    });
+                }
             } else {
                 append(key, value);
             }
@@ -3412,7 +3604,53 @@ const getUrl = (config: OpenAPIConfig, options: ApiRequestOptions): string => {
         .replace('{api-version}', config.VERSION)
         .replace(/{(.*?)}/g, (substring: string, group: string) => {
             if (options.path?.hasOwnProperty(group)) {
-                return encoder(String(options.path[group]));
+                const item = options.path[group];
+                if (!(item instanceof SerializableParameter)) {
+                    return encoder(String(item));
+                }
+
+                const style = item.style || 'simple';
+                const explode = item.explode || false;
+                const name = item.parameterName;
+                const value = item.parameterValue;
+
+                if (Array.isArray(value)) {
+                    if (style === 'label') {
+                        return encoder(\`.\${value.join(explode ? '.' : ',')}\`);
+                    } else if (style === 'matrix') {
+                        if (!explode) {
+                            return encoder(\`;\${name}=\${value.join(',')}\`);
+                        }
+
+                        return encoder(\`;\${value.map((v) => \`\${name}=\${v}\`).join(';')}\`);
+                    } else {
+                        return encoder(value.join(','));
+                    }
+                } else if (typeof value === 'object') {
+                    const entries = Object.entries(value);
+                    if (style === 'simple' && explode) {
+                        return encoder(entries.map(([k, v]) => \`\${k}=\${v}\`).join(','));
+                    } else if (style === 'label') {
+                        return encoder(\`.\${entries.map(([k, v]) => \`\${k},\${v}\`).join(explode ? '.' : ',')}\`);
+                    } else if (style === 'matrix') {
+                        if (!explode) {
+                            return encoder(\`;\${name}=\${entries.map(([k, v]) => \`\${k},\${v}\`).join(',')}\`);
+                        }
+
+                        return encoder(\`;\${entries.map(([k, v]) => \`\${k}=\${v}\`).join(';')}\`);
+                    }
+
+                    return encoder(entries.map(([k, v]) => \`\${k},\${v}\`).join(','));
+                } else {
+                    const stringVal = String(value);
+                    if (style === 'label') {
+                        return encoder(\`.\${stringVal}\`);
+                    } else if (style === 'matrix') {
+                        return encoder(\`;\${name}=\${stringVal}\`);
+                    } else {
+                        return encoder(stringVal);
+                    }
+                }
             }
             return substring;
         });
@@ -3466,10 +3704,42 @@ const getHeaders = async (config: OpenAPIConfig, options: ApiRequestOptions): Pr
     const password = await resolve(options, config.PASSWORD);
     const additionalHeaders = await resolve(options, config.HEADERS);
 
+    const serializeHeaders = (headers?: Record<string, any>): Record<string, string> | undefined => {
+    if (!headers) {
+        return headers;
+    }
+
+    const out = {};
+
+    Object.entries(headers).forEach(([hKey, hValue]) => {
+        if (!(hValue instanceof SerializableParameter)) {
+            out[hKey] = hValue;
+            return;
+        }
+
+        const explode = hValue.explode || false;
+        const value = hValue.parameterValue;
+
+        if (Array.isArray(value)) {
+            out[hKey] = value.join(',');
+        } else if (typeof value === 'object') {
+            if (explode) {
+                out[hKey] = Object.entries(value).map(([k, v]) => \`\${k},\${v}\`).join(',');
+                return;
+            }
+
+            out[hKey] = Object.entries(value).map(([k, v]) => \`\${k}=\${v}\`).join(',');
+        } else {
+            out[hKey] = value;
+        }
+    });
+
+    return out;
+};
     const headers = Object.entries({
         Accept: 'application/json',
         ...additionalHeaders,
-        ...options.headers,
+        ...serializeHeaders(options.headers),
     })
         .filter(([_, value]) => isDefined(value))
         .reduce((headers, [key, value]) => ({
@@ -6274,6 +6544,7 @@ exports[`v3 should generate: ./test/generated/v3/services/CollectionFormatServic
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class CollectionFormatService {
 
@@ -6296,11 +6567,11 @@ export class CollectionFormatService {
             method: 'GET',
             url: '/api/v{api-version}/collectionFormat',
             query: {
-                'parameterArrayCSV': parameterArrayCsv,
-                'parameterArraySSV': parameterArraySsv,
-                'parameterArrayTSV': parameterArrayTsv,
-                'parameterArrayPipes': parameterArrayPipes,
-                'parameterArrayMulti': parameterArrayMulti,
+                'parameterArrayCSV': new SerializableParameter('parameterArrayCSV', '', false, parameterArrayCsv),
+                'parameterArraySSV': new SerializableParameter('parameterArraySSV', '', false, parameterArraySsv),
+                'parameterArrayTSV': new SerializableParameter('parameterArrayTSV', '', false, parameterArrayTsv),
+                'parameterArrayPipes': new SerializableParameter('parameterArrayPipes', '', false, parameterArrayPipes),
+                'parameterArrayMulti': new SerializableParameter('parameterArrayMulti', '', false, parameterArrayMulti),
             },
         });
     }
@@ -6321,6 +6592,7 @@ import type { ModelWithString } from '../models/ModelWithString';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class ComplexService {
 
@@ -6344,8 +6616,8 @@ export class ComplexService {
             method: 'GET',
             url: '/api/v{api-version}/complex',
             query: {
-                'parameterObject': parameterObject,
-                'parameterReference': parameterReference,
+                'parameterObject': new SerializableParameter('parameterObject', '', false, parameterObject),
+                'parameterReference': new SerializableParameter('parameterReference', '', false, parameterReference),
             },
             errors: {
                 400: \`400 server error\`,
@@ -6380,7 +6652,7 @@ export class ComplexService {
             method: 'PUT',
             url: '/api/v{api-version}/complex/{id}',
             path: {
-                'id': id,
+                'id': new SerializableParameter('id', '', false, id),
             },
             body: requestBody,
             mediaType: 'application/json-patch+json',
@@ -6398,6 +6670,7 @@ exports[`v3 should generate: ./test/generated/v3/services/DefaultService.ts 1`] 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class DefaultService {
 
@@ -6424,6 +6697,7 @@ import type { ModelWithString } from '../models/ModelWithString';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class DefaultsService {
 
@@ -6448,11 +6722,11 @@ export class DefaultsService {
             method: 'GET',
             url: '/api/v{api-version}/defaults',
             query: {
-                'parameterString': parameterString,
-                'parameterNumber': parameterNumber,
-                'parameterBoolean': parameterBoolean,
-                'parameterEnum': parameterEnum,
-                'parameterModel': parameterModel,
+                'parameterString': new SerializableParameter('parameterString', '', false, parameterString),
+                'parameterNumber': new SerializableParameter('parameterNumber', '', false, parameterNumber),
+                'parameterBoolean': new SerializableParameter('parameterBoolean', '', false, parameterBoolean),
+                'parameterEnum': new SerializableParameter('parameterEnum', '', false, parameterEnum),
+                'parameterModel': new SerializableParameter('parameterModel', '', false, parameterModel),
             },
         });
     }
@@ -6478,11 +6752,11 @@ export class DefaultsService {
             method: 'POST',
             url: '/api/v{api-version}/defaults',
             query: {
-                'parameterString': parameterString,
-                'parameterNumber': parameterNumber,
-                'parameterBoolean': parameterBoolean,
-                'parameterEnum': parameterEnum,
-                'parameterModel': parameterModel,
+                'parameterString': new SerializableParameter('parameterString', '', false, parameterString),
+                'parameterNumber': new SerializableParameter('parameterNumber', '', false, parameterNumber),
+                'parameterBoolean': new SerializableParameter('parameterBoolean', '', false, parameterBoolean),
+                'parameterEnum': new SerializableParameter('parameterEnum', '', false, parameterEnum),
+                'parameterModel': new SerializableParameter('parameterModel', '', false, parameterModel),
             },
         });
     }
@@ -6512,14 +6786,14 @@ export class DefaultsService {
             method: 'PUT',
             url: '/api/v{api-version}/defaults',
             query: {
-                'parameterOptionalStringWithDefault': parameterOptionalStringWithDefault,
-                'parameterOptionalStringWithEmptyDefault': parameterOptionalStringWithEmptyDefault,
-                'parameterOptionalStringWithNoDefault': parameterOptionalStringWithNoDefault,
-                'parameterStringWithDefault': parameterStringWithDefault,
-                'parameterStringWithEmptyDefault': parameterStringWithEmptyDefault,
-                'parameterStringWithNoDefault': parameterStringWithNoDefault,
-                'parameterStringNullableWithNoDefault': parameterStringNullableWithNoDefault,
-                'parameterStringNullableWithDefault': parameterStringNullableWithDefault,
+                'parameterOptionalStringWithDefault': new SerializableParameter('parameterOptionalStringWithDefault', '', false, parameterOptionalStringWithDefault),
+                'parameterOptionalStringWithEmptyDefault': new SerializableParameter('parameterOptionalStringWithEmptyDefault', '', false, parameterOptionalStringWithEmptyDefault),
+                'parameterOptionalStringWithNoDefault': new SerializableParameter('parameterOptionalStringWithNoDefault', '', false, parameterOptionalStringWithNoDefault),
+                'parameterStringWithDefault': new SerializableParameter('parameterStringWithDefault', '', false, parameterStringWithDefault),
+                'parameterStringWithEmptyDefault': new SerializableParameter('parameterStringWithEmptyDefault', '', false, parameterStringWithEmptyDefault),
+                'parameterStringWithNoDefault': new SerializableParameter('parameterStringWithNoDefault', '', false, parameterStringWithNoDefault),
+                'parameterStringNullableWithNoDefault': new SerializableParameter('parameterStringNullableWithNoDefault', '', false, parameterStringNullableWithNoDefault),
+                'parameterStringNullableWithDefault': new SerializableParameter('parameterStringNullableWithDefault', '', false, parameterStringNullableWithDefault),
             },
         });
     }
@@ -6537,6 +6811,7 @@ import type { DeprecatedModel } from '../models/DeprecatedModel';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class DeprecatedService {
 
@@ -6552,7 +6827,7 @@ export class DeprecatedService {
             method: 'POST',
             url: '/api/v{api-version}/parameters/deprecated',
             headers: {
-                'parameter': parameter,
+                'parameter': new SerializableParameter('parameter', '', false, parameter),
             },
         });
     }
@@ -6568,6 +6843,7 @@ exports[`v3 should generate: ./test/generated/v3/services/DescriptionsService.ts
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class DescriptionsService {
 
@@ -6595,12 +6871,12 @@ export class DescriptionsService {
             method: 'POST',
             url: '/api/v{api-version}/descriptions/',
             query: {
-                'parameterWithBreaks': parameterWithBreaks,
-                'parameterWithBackticks': parameterWithBackticks,
-                'parameterWithSlashes': parameterWithSlashes,
-                'parameterWithExpressionPlaceholders': parameterWithExpressionPlaceholders,
-                'parameterWithQuotes': parameterWithQuotes,
-                'parameterWithReservedCharacters': parameterWithReservedCharacters,
+                'parameterWithBreaks': new SerializableParameter('parameterWithBreaks', '', false, parameterWithBreaks),
+                'parameterWithBackticks': new SerializableParameter('parameterWithBackticks', '', false, parameterWithBackticks),
+                'parameterWithSlashes': new SerializableParameter('parameterWithSlashes', '', false, parameterWithSlashes),
+                'parameterWithExpressionPlaceholders': new SerializableParameter('parameterWithExpressionPlaceholders', '', false, parameterWithExpressionPlaceholders),
+                'parameterWithQuotes': new SerializableParameter('parameterWithQuotes', '', false, parameterWithQuotes),
+                'parameterWithReservedCharacters': new SerializableParameter('parameterWithReservedCharacters', '', false, parameterWithReservedCharacters),
             },
         });
     }
@@ -6616,6 +6892,7 @@ exports[`v3 should generate: ./test/generated/v3/services/DuplicateService.ts 1`
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class DuplicateService {
 
@@ -6670,6 +6947,7 @@ exports[`v3 should generate: ./test/generated/v3/services/ErrorService.ts 1`] = 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class ErrorService {
 
@@ -6685,7 +6963,7 @@ export class ErrorService {
             method: 'POST',
             url: '/api/v{api-version}/error',
             query: {
-                'status': status,
+                'status': new SerializableParameter('status', '', false, status),
             },
             errors: {
                 500: \`Custom message: Internal Server Error\`,
@@ -6709,6 +6987,7 @@ import type { ModelWithString } from '../models/ModelWithString';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class FormDataService {
 
@@ -6725,7 +7004,7 @@ export class FormDataService {
             method: 'POST',
             url: '/api/v{api-version}/formData/',
             query: {
-                'parameter': parameter,
+                'parameter': new SerializableParameter('parameter', '', false, parameter),
             },
             formData: formData,
             mediaType: 'multipart/form-data',
@@ -6743,6 +7022,7 @@ exports[`v3 should generate: ./test/generated/v3/services/HeaderService.ts 1`] =
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class HeaderService {
 
@@ -6775,6 +7055,7 @@ import type { ModelWithString } from '../models/ModelWithString';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class MultipartService {
 
@@ -6824,6 +7105,7 @@ exports[`v3 should generate: ./test/generated/v3/services/MultipleTags1Service.t
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class MultipleTags1Service {
 
@@ -6860,6 +7142,7 @@ exports[`v3 should generate: ./test/generated/v3/services/MultipleTags2Service.t
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class MultipleTags2Service {
 
@@ -6896,6 +7179,7 @@ exports[`v3 should generate: ./test/generated/v3/services/MultipleTags3Service.t
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class MultipleTags3Service {
 
@@ -6921,6 +7205,7 @@ exports[`v3 should generate: ./test/generated/v3/services/NoContentService.ts 1`
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class NoContentService {
 
@@ -6949,6 +7234,7 @@ import type { Pageable } from '../models/Pageable';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class ParametersService {
 
@@ -6973,16 +7259,16 @@ export class ParametersService {
             method: 'POST',
             url: '/api/v{api-version}/parameters/{parameterPath}',
             path: {
-                'parameterPath': parameterPath,
+                'parameterPath': new SerializableParameter('parameterPath', '', false, parameterPath),
             },
             cookies: {
                 'parameterCookie': parameterCookie,
             },
             headers: {
-                'parameterHeader': parameterHeader,
+                'parameterHeader': new SerializableParameter('parameterHeader', '', false, parameterHeader),
             },
             query: {
-                'parameterQuery': parameterQuery,
+                'parameterQuery': new SerializableParameter('parameterQuery', '', false, parameterQuery),
             },
             formData: {
                 'parameterForm': parameterForm,
@@ -7019,19 +7305,19 @@ export class ParametersService {
             method: 'POST',
             url: '/api/v{api-version}/parameters/{parameter.path.1}/{parameter-path-2}/{PARAMETER-PATH-3}',
             path: {
-                'parameter.path.1': parameterPath1,
-                'parameter-path-2': parameterPath2,
-                'PARAMETER-PATH-3': parameterPath3,
+                'parameter.path.1': new SerializableParameter('parameter.path.1', '', false, parameterPath1),
+                'parameter-path-2': new SerializableParameter('parameter-path-2', '', false, parameterPath2),
+                'PARAMETER-PATH-3': new SerializableParameter('PARAMETER-PATH-3', '', false, parameterPath3),
             },
             cookies: {
                 'PARAMETER-COOKIE': parameterCookie,
             },
             headers: {
-                'parameter.header': parameterHeader,
+                'parameter.header': new SerializableParameter('parameter.header', '', false, parameterHeader),
             },
             query: {
-                'default': _default,
-                'parameter-query': parameterQuery,
+                'default': new SerializableParameter('default', '', false, _default),
+                'parameter-query': new SerializableParameter('parameter-query', '', false, parameterQuery),
             },
             formData: {
                 'parameter_form': parameterForm,
@@ -7054,7 +7340,7 @@ export class ParametersService {
             method: 'GET',
             url: '/api/v{api-version}/parameters/',
             query: {
-                'parameter': parameter,
+                'parameter': new SerializableParameter('parameter', '', false, parameter),
             },
             body: requestBody,
             mediaType: 'application/json',
@@ -7074,7 +7360,7 @@ export class ParametersService {
             method: 'POST',
             url: '/api/v{api-version}/parameters/',
             query: {
-                'parameter': parameter,
+                'parameter': new SerializableParameter('parameter', '', false, parameter),
             },
             body: requestBody,
             mediaType: 'application/json',
@@ -7094,6 +7380,7 @@ import type { ModelWithString } from '../models/ModelWithString';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class RequestBodyService {
 
@@ -7110,7 +7397,7 @@ export class RequestBodyService {
             method: 'POST',
             url: '/api/v{api-version}/requestBody/',
             query: {
-                'parameter': parameter,
+                'parameter': new SerializableParameter('parameter', '', false, parameter),
             },
             body: requestBody,
             mediaType: 'application/json',
@@ -7132,6 +7419,7 @@ import type { ModelWithString } from '../models/ModelWithString';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class ResponseService {
 
@@ -7196,6 +7484,7 @@ exports[`v3 should generate: ./test/generated/v3/services/SimpleService.ts 1`] =
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class SimpleService {
 
@@ -7280,6 +7569,7 @@ exports[`v3 should generate: ./test/generated/v3/services/TypesService.ts 1`] = 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class TypesService {
 
@@ -7312,16 +7602,16 @@ export class TypesService {
             method: 'GET',
             url: '/api/v{api-version}/types',
             path: {
-                'id': id,
+                'id': new SerializableParameter('id', '', false, id),
             },
             query: {
-                'parameterNumber': parameterNumber,
-                'parameterString': parameterString,
-                'parameterBoolean': parameterBoolean,
-                'parameterObject': parameterObject,
-                'parameterArray': parameterArray,
-                'parameterDictionary': parameterDictionary,
-                'parameterEnum': parameterEnum,
+                'parameterNumber': new SerializableParameter('parameterNumber', '', false, parameterNumber),
+                'parameterString': new SerializableParameter('parameterString', '', false, parameterString),
+                'parameterBoolean': new SerializableParameter('parameterBoolean', '', false, parameterBoolean),
+                'parameterObject': new SerializableParameter('parameterObject', '', false, parameterObject),
+                'parameterArray': new SerializableParameter('parameterArray', '', false, parameterArray),
+                'parameterDictionary': new SerializableParameter('parameterDictionary', '', false, parameterDictionary),
+                'parameterEnum': new SerializableParameter('parameterEnum', '', false, parameterEnum),
             },
         });
     }
@@ -7337,6 +7627,7 @@ exports[`v3 should generate: ./test/generated/v3/services/UploadService.ts 1`] =
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import { SerializableParameter } from '../core/SerializableParameter';
 
 export class UploadService {
 

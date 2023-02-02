@@ -48,6 +48,7 @@ describe('writeClientSchemas', () => {
                 request: () => 'request',
                 baseHttpRequest: () => 'baseHttpRequest',
                 httpRequest: () => 'httpRequest',
+                serializableParameter: () => 'serializableParameter',
             },
         };
 
