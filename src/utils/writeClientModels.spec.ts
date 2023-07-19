@@ -48,6 +48,7 @@ describe('writeClientModels', () => {
                 request: () => 'request',
                 baseHttpRequest: () => 'baseHttpRequest',
                 httpRequest: () => 'httpRequest',
+                serializableParameter: () => 'serializableParameter',
             },
         };
 

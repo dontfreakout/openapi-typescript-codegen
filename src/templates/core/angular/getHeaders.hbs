@@ -1,4 +1,6 @@
 export const getHeaders = (config: OpenAPIConfig, options: ApiRequestOptions): Observable<HttpHeaders> => {
+	{{>functions/serializeHeaders}}
+
 	return forkJoin({
 		token: resolve(options, config.TOKEN),
 		username: resolve(options, config.USERNAME),
